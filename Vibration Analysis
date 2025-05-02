@@ -1,0 +1,58 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SparkFunMPU9250-DMP.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // Adjust I2C address if needed
+
+MPU9250_DMP imu;
+
+void setup() {
+  Wire.begin();
+  Serial.begin(9600);
+
+  lcd.init();
+  lcd.backlight();
+
+  if (imu.begin() != INV_SUCCESS) {
+    lcd.print("MPU9250 Error");
+    while (1);
+  }
+
+  imu.setSensors(INV_XYZ_ACCEL);
+  imu.setGyroFSR(250); // 250, 500, 1000, or 2000
+  imu.setAccelFSR(2);  // 2, 4, 8, or 16
+  imu.setLPF(5);       // 5Hz low pass filter
+  imu.setSampleRate(10); // Hz
+}
+
+void loop() {
+  if (imu.dataReady()) {
+    imu.update(UPDATE_ACCEL);
+    float ax = imu.calcAccel(imu.ax);
+    float ay = imu.calcAccel(imu.ay);
+    float az = imu.calcAccel(imu.az);
+
+    lcd.clear();
+    
+    lcd.setCursor(0, 0);
+    lcd.print("vibration:");
+    lcd.print(az, 1);
+    
+ if (az == 1.0) {
+    lcd.setCursor(0, 1);
+    lcd.print("Motor Stopped");
+  } else if (az > 1.1 && az < 2.0) {
+    lcd.setCursor(0, 1);
+    lcd.print("Motor Running");
+  } else if (az > 2.0) {
+    lcd.setCursor(0, 1);
+    lcd.print("Motor Overloaded"); 
+  } else {
+    lcd.setCursor(0, 1);
+    lcd.print("Vib. Analysis"); 
+  }
+
+
+    delay(1000);  // Reduce flicker
+  }
+}
